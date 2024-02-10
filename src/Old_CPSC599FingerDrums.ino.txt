@@ -1,0 +1,173 @@
+// IDE code before I imported it into PlatformIO - Christian
+
+#include <MIDI.h>
+
+#define BPM 120
+
+#define C 24
+#define C_ 25
+#define D 26
+#define D_ 27
+#define E 28
+#define F 29
+#define F_ 30
+#define G 31
+#define G_ 32
+#define A 33
+#define A_ 34
+#define B 35
+
+#define THUMBNOTE   G_
+#define INDEXNOTE   D
+#define MIDDLENOTE  C
+#define RINGNOTE    C
+#define PINKYNOTE   C
+
+#define QUART (60000 / BPM)
+
+const int thumbPin  = A0;
+const int indexPin  = A1;
+const int middlePin = A2;
+const int ringPin   = A3;
+const int pinkyPin  = A4;
+const int flexPin   = A5;
+
+const int channel = 1;
+
+int qPtrBegin = 0;
+int qPtrEnd = 0;
+
+struct MidiNote {
+  int finger = -1;
+  int velocity = 0;
+  int note = 0;
+  float startTime = 0.0f;
+};
+
+MidiNote note1, note2, note3, note4, note5;
+
+//Queue<MidiNote, 5> noteQueue;
+MidiNote noteQueue[5] = {note1, note2, note3, note4, note5};
+
+float lastTapVals[5] = {0.f};
+float lastTimeChecks[5] = {0.f};
+float releaseBuffers[5] = {0.f};
+int octaves[5] = {1, 1, 1, 1, 1};
+
+// Create and bind the MIDI interface to the default hardware Serial port
+MIDI_CREATE_DEFAULT_INSTANCE();
+
+long lastTimeCheck = 0;
+void playNote(int note, int octave, long beatMS, long rest = 0);
+void setup()
+{   
+    for(int i = 0; i < 5; i++) {
+      noteQueue[i].finger = -1;
+      noteQueue[i].velocity = 0;
+      noteQueue[i].note = 0;
+      noteQueue[i].startTime = 0.0f;
+    }
+    pinMode(A0, INPUT);
+    pinMode(A1, INPUT);
+    pinMode(A2, INPUT);
+    // pinMode(A3, INPUT);
+    // pinMode(A4, INPUT);
+    // pinMode(A5, INPUT);
+    Serial.begin(115200); //**  Baud Rate 31250 for MIDI class compliant jack | 115200 for Hairless MIDI
+    // Serial.begin(9600); //**  Baud Rate 31250 for MIDI class compliant jack | 115200 for Hairless MIDI
+    //MIDI.begin(MIDI_CHANNEL_OMNI);  // Listen to all incoming messages
+}
+
+void flushQueue();
+void checkPresses();
+int returnNote(int pin, int octave);
+void queueNote(int index, int velocity);
+int convertNote(int note, int octave);
+
+void loop()
+{ 
+  checkPresses();
+  flushQueue();
+}
+
+void checkPresses() {
+  int tapValues[5];
+  tapValues[0] = constrain(map(analogRead(thumbPin), 30, 500, 0, 127), 0, 127);
+  tapValues[1] = constrain(map(analogRead(indexPin), 30, 500, 0, 127), 0, 127);
+  tapValues[2] = constrain(map(analogRead(middlePin), 30, 500, 0, 127), 0, 127);
+  tapValues[3] = constrain(map(analogRead(ringPin), 30, 500, 0, 127), 0, 127);
+  tapValues[4] = constrain(map(analogRead(pinkyPin), 30, 500, 0, 127), 0, 127);
+  for(int i = 0; i < 5; i++) {
+    if(releaseBuffers[i] == 0.0f && lastTapVals[i] == 0.0f && lastTimeChecks[i] == 0.0f) {
+
+      if(tapValues[i] > 30.f && lastTimeChecks[i] == 0.0f) {
+        lastTapVals[i] = tapValues[i];
+        lastTimeChecks[i] = millis();
+      } 
+    } else if(lastTimeChecks[i] != 0.0f){
+      if(millis() - lastTimeChecks[i] < 2.f) {
+        lastTapVals[i] = max(lastTapVals[i], tapValues[i]);
+      } else {
+        queueNote(i, lastTapVals[i]);
+        lastTimeChecks[i] = 0.0f;
+      }
+    } 
+  }
+}
+
+void queueNote(int index, int velocity) {
+  MidiNote thisNote;
+  int finger = 0;
+  if(index == 0) finger = A0;
+  else if(index == 1) finger = A1;
+  else if(index == 2) finger = A2;
+  else if(index == 3) finger = A3;
+  else if(index == 4) finger = A4;
+  else{
+    return;
+  }
+  thisNote.finger = finger;
+  thisNote.velocity = velocity;
+  thisNote.note = returnNote(index, octaves[index]);
+  thisNote.startTime = millis();
+  noteQueue[index] = thisNote;
+  MIDI.sendNoteOn(thisNote.note, thisNote.velocity, channel);
+}
+
+int returnNote(int pin, int octave) {
+  if(pin == 0) 
+    return convertNote(THUMBNOTE, octave);
+  else if(pin == 1) 
+    return convertNote(INDEXNOTE, octave);
+  else if(pin == 2) 
+    return convertNote(MIDDLENOTE, octave);
+  else if(pin == 3) 
+    return convertNote(RINGNOTE, octave);
+  else if(pin == 4) 
+    return convertNote(PINKYNOTE, octave);
+  return -1;
+}
+
+void flushQueue() {
+  int tapValues[5];
+  tapValues[0] = constrain(map(analogRead(thumbPin), 30, 800, 0, 127), 0, 127);
+  tapValues[1] = constrain(map(analogRead(indexPin), 30, 800, 0, 127), 0, 127);
+  tapValues[2] = constrain(map(analogRead(middlePin), 30, 800, 0, 127), 0, 127);
+  tapValues[3] = constrain(map(analogRead(ringPin), 30, 800, 0, 127), 0, 127);
+  tapValues[4] = constrain(map(analogRead(pinkyPin), 30, 800, 0, 127), 0, 127);
+  for(int i = 0; i < 5; i++) {
+    if(noteQueue[i].startTime != 0.0f && millis() - noteQueue[i].startTime > 50.f && tapValues[i] < 30.f) {
+      MidiNote curNote = noteQueue[i];
+      MIDI.sendNoteOff(curNote.note, curNote.velocity, channel);
+      MidiNote newNote;
+      noteQueue[i] = newNote;
+      lastTapVals[i] = 0.0f;
+    } else if(releaseBuffers[i] != 0.f && millis() - releaseBuffers[i] > 25.f) {
+      releaseBuffers[i] = 0.0f;
+    }
+  }
+}
+
+int convertNote(int note, int octave) {
+  return note + (octave * 12);
+}
