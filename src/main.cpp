@@ -5,7 +5,9 @@
 
 #include <MIDI.h> // The MIDI library
 
-// A bunch of notes to MIDI macros
+// 1.15 1.1 | 3.65 7.5 | 0.4
+
+// A bunch of notes to MIDI macros 1.15 
 #define C 24 //C1 KICK DRUM
 #define C_ 25
 #define D 26
@@ -23,8 +25,8 @@
 #define THUMBNOTE   C
 #define INDEXNOTE   A_
 #define MIDDLENOTE  E
-#define RINGNOTE    C
-#define PINKYNOTE   C
+#define RINGNOTE    F
+#define PINKYNOTE   G
 // Octaves for every finger
 const int octaves[5] = {2, 2, 2, 2, 2};
 
@@ -55,7 +57,7 @@ const float NOTE_HOLD_TIME = 50.f;
 const float DEBOUNCE_TIME = 25.f;
 
 // For debug, default should be 5 because 5 fingers.
-const int NUM_FINGERS = 3;
+const int NUM_FINGERS = 5;
 
 // MidiNote struct to hold info
 struct MidiNote {
@@ -75,6 +77,8 @@ float tapValues[5] = {0.f};
 float lastTapVals[5] = {0.f};
 float lastTimeChecks[5] = {0.f};
 float releaseBuffers[5] = {0.f};
+
+float bender = 0.0f;
 
 // Create and bind the MIDI interface to the default hardware Serial port
 MIDI_CREATE_DEFAULT_INSTANCE();
@@ -108,15 +112,18 @@ void setup()
     pinMode(A0, INPUT);
     pinMode(A1, INPUT);
     pinMode(A2, INPUT);
-    // pinMode(A3, INPUT);
-    // pinMode(A4, INPUT);
-    // pinMode(A5, INPUT);
+    pinMode(A3, INPUT);
+    pinMode(A4, INPUT);
+    pinMode(A5, INPUT);
+    pinMode(A6, INPUT);
     Serial.begin(115200); //**  Baud Rate 31250 for MIDI class compliant jack | 115200 for Hairless MIDI
     // Serial.begin(9600); //**  Baud Rate 31250 for MIDI class compliant jack | 115200 for Hairless MIDI
 }
 
 void loop()
 { 
+  bender = (float)constrain(analogRead(flexPin), 0, MAX_SENSITIVITY);
+  bender = (float)bender/(float)(MAX_SENSITIVITY);
   tapValues[0] = constrain(map(analogRead(thumbPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[1] = constrain(map(analogRead(indexPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[2] = constrain(map(analogRead(middlePin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
@@ -138,6 +145,7 @@ void checkPresses() {
       if(millis() - lastTimeChecks[i] < 2.f) {
         lastTapVals[i] = max(lastTapVals[i], tapValues[i]);
       } else {
+        MIDI.sendPitchBend(bender, channel);
         queueNote(i, lastTapVals[i]);
         lastTimeChecks[i] = 0.0f;
       }
