@@ -1,7 +1,7 @@
 # CPSC599FingerDrums
 
 ## Description
-CPSC 599.88 | WINTER 2024 | 
+CPSC 599.88 | WINTER 2024 | C.S. | 30089672
 
 ## Software Requirements and Resources
 
