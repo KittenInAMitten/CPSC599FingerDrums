@@ -34,3 +34,8 @@ CPSC 599.88 | WINTER 2024 | C.S. | 30089672
 
 
 ## Setup Instructions
+1. Download LoopMIDI and run it to create a MIDI port.
+2. Download Hairless MIDI to Serial to convert serial to Midi with LoopMIDI as MIDI Out.
+3. Download VirtualMIDISynth and a soundfont, like the one I linked above.
+4. Download Virtual MIDI Piano Keyboard (VMPK) and in MIDI Setup, check Enable MIDI Input, uncheck MIDI Omni Mode. Set MIDI IN/OUT Driver to Windows MM. Set Input to loopMIDI Port and Output to VirtualMIDISynth#1.
+5. Install MIDI Library in Arduino IDE or Platform IO depending on how you wish to build.
