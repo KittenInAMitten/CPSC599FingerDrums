@@ -42,15 +42,15 @@ const int flexPin   = A5;
 const int channel = 1;
 
 // Sensitivity range for force sensors
-const int MIN_SENSITIVITY = 20;
+const int MIN_SENSITIVITY = 1;
 const int MAX_SENSITIVITY = 600;
 
 // Velocity range to convert sensitivities
-const int MIN_VELOCITY = 30;
+const int MIN_VELOCITY = 35;
 const int MAX_VELOCITY = 127;
 
 // Velocity minimum response
-const float MIN_VAL_RESPONSE = 50.f;
+const float MIN_VAL_RESPONSE = (float)MIN_VELOCITY + 5.0f;
 
 // Debounce and note hold times
 const float NOTE_HOLD_TIME = 50.f;
@@ -122,8 +122,9 @@ void setup()
 
 void loop()
 { 
-  bender = (float)constrain(analogRead(flexPin), 0, MAX_SENSITIVITY);
-  bender = (float)bender/(float)(MAX_SENSITIVITY);
+  bender = (float)(constrain(map(analogRead(A5), 300, 500, 0, 200), 0, 200));
+  if(bender < 100) bender = 0.0f;
+  else bender = 1.0f;
   tapValues[0] = constrain(map(analogRead(thumbPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[1] = constrain(map(analogRead(indexPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[2] = constrain(map(analogRead(middlePin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
