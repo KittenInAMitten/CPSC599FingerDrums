@@ -122,29 +122,40 @@ void setup()
 
 void loop()
 { 
+  // Flex sensor alters pitch bender
   bender = (float)(constrain(map(analogRead(A5), 300, 500, 0, 200), 0, 200));
   if(bender < 100) bender = 0.0f;
   else bender = 1.0f;
+
+  // Reading pin values
   tapValues[0] = constrain(map(analogRead(thumbPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[1] = constrain(map(analogRead(indexPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[2] = constrain(map(analogRead(middlePin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[3] = constrain(map(analogRead(ringPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[4] = constrain(map(analogRead(pinkyPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
+
+  // Call functions
   checkPresses();
   flushQueue();
 }
 
 void checkPresses() {
+  // For every finger
   for(int i = 0; i < NUM_FINGERS; i++) {
+    // Check if the finger is at a ready state
     if(releaseBuffers[i] == 0.0f && lastTapVals[i] == 0.0f && lastTimeChecks[i] == 0.0f) {
-
+      // Check if the tap value is at a minimum value and that it wasn't already registered
       if(tapValues[i] > MIN_VAL_RESPONSE && lastTimeChecks[i] == 0.0f) {
+        // Register the tap and set lastTimeChecks to current time
         lastTapVals[i] = tapValues[i];
         lastTimeChecks[i] = millis();
       } 
+    // Check if lastTimeChecks has been activated and value was registered
     } else if(lastTimeChecks[i] != 0.0f && lastTapVals[i] > MIN_VAL_RESPONSE){
+      // If ms buffer time has not passed, check if a new larger value was read
       if(millis() - lastTimeChecks[i] < 2.f) {
         lastTapVals[i] = max(lastTapVals[i], tapValues[i]);
+      // Otherwise just use whatever the latest value was saved
       } else {
         MIDI.sendPitchBend(bender, channel);
         queueNote(i, lastTapVals[i]);
@@ -155,6 +166,7 @@ void checkPresses() {
 }
 
 void queueNote(int index, int velocity) {
+  // Simply prep a note for sending and saving
   MidiNote thisNote;
   thisNote.velocity = velocity;
   thisNote.note = returnNote(index, octaves[index]);
@@ -179,12 +191,14 @@ int returnNote(int index, int octave) {
 
 void flushQueue() {
   for(int i = 0; i < NUM_FINGERS; i++) {
+    // If the note time has expired, tell MIDI to no longer play this note
     if(noteQueue[i].startTime != 0.0f && millis() - noteQueue[i].startTime > NOTE_HOLD_TIME && tapValues[i] < MIN_VAL_RESPONSE) {
       MidiNote curNote = noteQueue[i];
       MIDI.sendNoteOff(curNote.note, curNote.velocity, channel);
       MidiNote newNote;
       noteQueue[i] = newNote;
       lastTapVals[i] = 0.0f;
+    // Debounce timer
     } else if(releaseBuffers[i] != 0.f && millis() - releaseBuffers[i] > DEBOUNCE_TIME) {
       releaseBuffers[i] = 0.0f;
     }
