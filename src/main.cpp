@@ -25,10 +25,10 @@
 #define THUMBNOTE   C
 #define INDEXNOTE   A_
 #define MIDDLENOTE  E
-#define RINGNOTE    F
-#define PINKYNOTE   G
+#define RINGNOTE    D
+#define PINKYNOTE   D_
 // Octaves for every finger
-const int octaves[5] = {2, 2, 2, 2, 2};
+const int octaves[5] = {2, 2, 2, 2, 3};
 
 // Pin variables
 const int thumbPin  = A0;
@@ -42,11 +42,11 @@ const int flexPin   = A5;
 const int channel = 1;
 
 // Sensitivity range for force sensors
-const int MIN_SENSITIVITY = 1;
-const int MAX_SENSITIVITY = 600;
+const int MIN_SENSITIVITY = 35;
+const int MAX_SENSITIVITY = 450;
 
 // Velocity range to convert sensitivities
-const int MIN_VELOCITY = 35;
+const int MIN_VELOCITY = 50;
 const int MAX_VELOCITY = 127;
 
 // Velocity minimum response
@@ -68,6 +68,8 @@ struct MidiNote {
 
 // Note and queues
 MidiNote note1, note2, note3, note4, note5;
+
+MidiNote lastNote;
 
 //Queue<MidiNote, 5> noteQueue;
 MidiNote noteQueue[5] = {note1, note2, note3, note4, note5};
@@ -100,6 +102,8 @@ int returnNote(int index, int octave);
 /// @param velocity The velocity of the note or force
 void queueNote(int index, int velocity);
 
+void queueSameNote(int index, int velocity);
+
 /// @brief Converts a base note according to the given octave (E.G., Note A + Octave 2 = A2 in MIDI)
 /// @param note The base note
 /// @param octave The octave 
@@ -127,6 +131,12 @@ void loop()
   if(bender < 100) bender = 0.0f;
   else bender = 1.0f;
 
+  bender = 1.0f;
+  
+  if(bender != 1.0f && lastNote.note != 0.0f) {
+    lastNote.note = 0.0f;
+  }
+
   // Reading pin values
   tapValues[0] = constrain(map(analogRead(thumbPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
   tapValues[1] = constrain(map(analogRead(indexPin), MIN_SENSITIVITY, MAX_SENSITIVITY, MIN_VELOCITY, MAX_VELOCITY), MIN_VELOCITY, MAX_VELOCITY);
@@ -153,12 +163,20 @@ void checkPresses() {
     // Check if lastTimeChecks has been activated and value was registered
     } else if(lastTimeChecks[i] != 0.0f && lastTapVals[i] > MIN_VAL_RESPONSE){
       // If ms buffer time has not passed, check if a new larger value was read
-      if(millis() - lastTimeChecks[i] < 2.f) {
+      if(millis() - lastTimeChecks[i] < 5.f) {
         lastTapVals[i] = max(lastTapVals[i], tapValues[i]);
       // Otherwise just use whatever the latest value was saved
       } else {
-        MIDI.sendPitchBend(bender, channel);
-        queueNote(i, lastTapVals[i]);
+        if(bender == 1.0f) {
+          if(lastNote.note == 0) {
+            lastNote.note = returnNote(i, octaves[i]);
+          }
+          queueSameNote(i, lastTapVals[i]);
+        } else {
+          lastNote.note = 0;
+          MIDI.sendPitchBend(bender, channel);
+          queueNote(i, lastTapVals[i]);
+        }
         lastTimeChecks[i] = 0.0f;
       }
     } 
@@ -174,6 +192,18 @@ void queueNote(int index, int velocity) {
   noteQueue[index] = thisNote;
   MIDI.sendNoteOn(thisNote.note, thisNote.velocity, channel);
 }
+
+
+
+void queueSameNote(int index, int velocity) {
+  // Simply prep a note for sending and saving
+  MidiNote thisNote = lastNote;
+  thisNote.velocity = velocity;
+  thisNote.startTime = millis();
+  noteQueue[index] = thisNote;
+  MIDI.sendNoteOn(thisNote.note, thisNote.velocity, channel);
+}
+
 
 int returnNote(int index, int octave) {
   if(index == 0) 
