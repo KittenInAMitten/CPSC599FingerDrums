@@ -8,18 +8,18 @@
 // 1.15 1.1 | 3.65 7.5 | 0.4
 
 // A bunch of notes to MIDI macros 1.15 
-#define C 24 //C1 KICK DRUM
-#define C_ 25
-#define D 26
-#define D_ 27
-#define E 28 //E3 Hi-Hat
-#define F 29
-#define F_ 30 
-#define G 31 
-#define G_ 32 //G#1 SNARE
-#define A 33
-#define A_ 34
-#define B 35
+#define C 24  // C2 Kick            // C3 Hi-Mid Tom
+#define C_ 25 // C#2 Side Stick     // C#3 Crash Cymbal1 
+#define D 26  // D2 Snare           // D3 High Tom
+#define D_ 27 // D#2 Hand Clap      // D#3 Ride Symbal1
+#define E 28  // E2 E-Snare         // E3 Hi-Hat
+#define F 29  // F2 Low Floor Tom
+#define F_ 30 // F#2 Closed Hi-hat
+#define G 31  // G2 High Floor Tom  // G3 Splash Cymbal
+#define G_ 32 // G#2 Pedal Hi-Hat
+#define A 33  // A2 Low Tom         // A3 Crash Cymbal2
+#define A_ 34 // A#2 Open Hi-hat
+#define B 35  // B1 Acoustic Kick   // B2 Low-Mid Tom   // B3 Ride Cymbal2
 
 // Macros for notes
 #define THUMBNOTE   C
