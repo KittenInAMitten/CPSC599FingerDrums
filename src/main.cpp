@@ -22,13 +22,13 @@
 #define B 35
 
 // Macros for notes
-#define THUMBNOTE   C
+#define THUMBNOTE   B
 #define INDEXNOTE   A_
 #define MIDDLENOTE  E
 #define RINGNOTE    D
 #define PINKYNOTE   D_
 // Octaves for every finger
-const int octaves[5] = {2, 2, 2, 2, 3};
+const int octaves[5] = {1, 2, 2, 2, 3};
 
 // Pin variables
 const int thumbPin  = A0;
@@ -42,7 +42,7 @@ const int flexPin   = A5;
 const int channel = 1;
 
 // Sensitivity range for force sensors
-const int MIN_SENSITIVITY = 35;
+const int MIN_SENSITIVITY = 25;
 const int MAX_SENSITIVITY = 450;
 
 // Velocity range to convert sensitivities
@@ -131,7 +131,7 @@ void loop()
   if(bender < 100) bender = 0.0f;
   else bender = 1.0f;
 
-  bender = 1.0f;
+  //bender = 1.0f;
   
   if(bender != 1.0f && lastNote.note != 0.0f) {
     lastNote.note = 0.0f;
@@ -163,7 +163,7 @@ void checkPresses() {
     // Check if lastTimeChecks has been activated and value was registered
     } else if(lastTimeChecks[i] != 0.0f && lastTapVals[i] > MIN_VAL_RESPONSE){
       // If ms buffer time has not passed, check if a new larger value was read
-      if(millis() - lastTimeChecks[i] < 5.f) {
+      if(millis() - lastTimeChecks[i] < 4.f) {
         lastTapVals[i] = max(lastTapVals[i], tapValues[i]);
       // Otherwise just use whatever the latest value was saved
       } else {
