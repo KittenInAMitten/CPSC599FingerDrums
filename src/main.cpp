@@ -22,13 +22,13 @@
 #define B 35
 
 // Macros for notes
-#define THUMBNOTE   C
+#define THUMBNOTE   B
 #define INDEXNOTE   A_
 #define MIDDLENOTE  E
 #define RINGNOTE    D
 #define PINKYNOTE   D_
 // Octaves for every finger
-const int octaves[5] = {2, 2, 2, 2, 3};
+const int octaves[5] = {1, 2, 2, 2, 3};
 
 // Pin variables
 const int thumbPin  = A0;
